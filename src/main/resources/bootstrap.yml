@@ -1,0 +1,26 @@
+#引入spring-boot-starter-actuator依赖后访问POST  http://192.168.1.156:8084/actuator/refresh 即可更新git中的配置到本服务中
+#执行POST  http://192.168.1.156:8084/actuator/refresh 后程序会用spring.application.name和profile和springcloud拼接一个url让cloud-config-server去git过去配置信息
+spring:
+  application:
+    name: cloud-gateway-server
+  cloud:
+    config: #启动时访问config-server服务器让服务器去获取git配置信息给到自己
+      #uri: http://192.168.1.156:8085 #cloud-config-server的地址
+      profile: pro #配置文件名称最后一个组成单元字符，配置文件名称由项目名称-这个单元字符组成，这里代表配置文件名称是cloud-gateway-server-pro
+      label: springcloud #配置信息所在的git分支
+      discovery:
+        service-id: cloud-config-server #config-server在eureka上的注册id
+        enabled: true #开启读取权限
+
+#暴露监控端点
+management:
+  endpoints:
+    web:
+      exposure:
+        include: refresh,health
+
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://root:123456@localhost:8866/eureka/

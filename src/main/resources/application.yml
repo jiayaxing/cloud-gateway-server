@@ -1,0 +1,58 @@
+
+
+server:
+  port: 8084
+
+spring:
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: false #必须为false，否则断言中cloud-user改为cloud-user1后，访问cloud-user和cloud-user1都能正常转发。
+          lower-case-service-id: true   #为false则必须请求路径中cloud-user都为大写
+      routes:
+        - id: cloud-user
+          uri: lb://CLOUD-USER   #转发路径   websocket长连接可以在lb后使用ws  eg:  lb: ws://serviceid
+          predicates:
+          - Path=/cloud-user/**
+          filters:
+          #- TokenAuthenticationFilter #cloud-user服务都通过鉴权过滤器
+          - StripPrefix=1  #转发前去掉cloud-user
+          - name: Hystrix  # 熔断降级配置
+            args:
+              name : fallbackcmd
+              fallbackUri: 'forward:/defaultfallback'
+        - id: cloud-order
+          uri: lb://CLOUD-ORDER   #转发路径   websocket长连接可以在lb后使用ws  eg:  lb: ws://serviceid
+          predicates:
+          - Path=/cloud-order/**
+          filters:
+          #- TokenAuthenticationFilter #cloud-order服务都通过鉴权过滤器
+          - StripPrefix=1  #转发前去掉cloud-order
+
+
+# hystrix 信号量隔离，3秒后自动超时
+hystrix:
+  command:
+    fallbackcmd:
+      execution:
+        isolation:
+          strategy: SEMAPHORE
+          thread:
+            timeoutInMilliseconds: 3000
+  shareSecurityContext: true
+
+
+
+logging:
+  level:
+    org.springframework.cloud.gateway: trace
+    org.springframework.http.server.reactive: debug
+    org.springframework.web.reactive: debug
+    reactor.ipc.netty: debug
+
+
+
+
+
+
